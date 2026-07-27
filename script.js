@@ -1,26 +1,55 @@
+// ==========================================
+// ШАПКА И МОБИЛЬНОЕ МЕНЮ
+// ==========================================
 const header = document.querySelector('.site-header');
 const menuButton = document.querySelector('.menu-toggle');
 const nav = document.querySelector('.site-nav');
+const menuOverlay = document.getElementById('menuOverlay');
 
 const updateHeader = () => header.classList.toggle('scrolled', window.scrollY > 24);
 updateHeader();
 window.addEventListener('scroll', updateHeader, { passive: true });
 
-menuButton.addEventListener('click', () => {
-    const open = !nav.classList.contains('open');
-    nav.classList.toggle('open', open);
-    menuButton.classList.toggle('active', open);
-    menuButton.setAttribute('aria-expanded', String(open));
-    document.body.style.overflow = open ? 'hidden' : '';
-});
+function openMenu() {
+    nav.classList.add('open');
+    menuButton.classList.add('active');
+    menuButton.setAttribute('aria-expanded', 'true');
+    if (menuOverlay) menuOverlay.classList.add('active');
+    document.body.style.overflow = 'hidden';
+}
 
-nav.querySelectorAll('a').forEach(link => link.addEventListener('click', () => {
+function closeMenu() {
     nav.classList.remove('open');
     menuButton.classList.remove('active');
     menuButton.setAttribute('aria-expanded', 'false');
+    if (menuOverlay) menuOverlay.classList.remove('active');
     document.body.style.overflow = '';
-}));
+}
 
+menuButton.addEventListener('click', () => {
+    const isOpen = nav.classList.contains('open');
+    if (isOpen) {
+        closeMenu();
+    } else {
+        openMenu();
+    }
+});
+
+if (menuOverlay) {
+    menuOverlay.addEventListener('click', closeMenu);
+}
+
+nav.querySelectorAll('a').forEach(link => link.addEventListener('click', closeMenu));
+
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && nav.classList.contains('open')) {
+        closeMenu();
+    }
+});
+
+// ==========================================
+// АНИМАЦИЯ ПОЯВЛЕНИЯ ПРИ СКРОЛЛЕ
+// ==========================================
 const observer = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
         if (entry.isIntersecting) {
@@ -31,10 +60,17 @@ const observer = new IntersectionObserver((entries) => {
 }, { threshold: 0.12, rootMargin: '0px 0px -40px' });
 
 document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
-document.getElementById('year').textContent = new Date().getFullYear();
 
 // ==========================================
-// ЛОГИКА КОЛЕСА КОМПЕТЕНЦИЙ
+// ГОД В ФУТЕРЕ
+// ==========================================
+const yearElement = document.getElementById('year');
+if (yearElement) {
+    yearElement.textContent = new Date().getFullYear();
+}
+
+// ==========================================
+// ЛОГИКА КОЛЕСА КОМПЕТЕНЦИЙ (6 СЕКТОРОВ)
 // ==========================================
 const wheelWrapper = document.getElementById('wheelWrapper');
 const infoPanel = document.getElementById('infoPanel');
@@ -50,7 +86,7 @@ const sectionsData = {
     0: { 
         title: 'БУРЕНИЕ', 
         color: 'blue', 
-        icon: '', 
+        icon: '🛢️', 
         items: [
             'Ремонт и обслуживание бурового оборудования',
             'Ремонт СВП',
@@ -61,7 +97,7 @@ const sectionsData = {
     1: { 
         title: 'ГРП', 
         color: 'orange', 
-        icon: '', 
+        icon: '⚙️', 
         items: [
             'Ремонт и обслуживание насосных установок ГРП',
             'Ремонт гидравлических блоков и манифольдов',
@@ -72,7 +108,7 @@ const sectionsData = {
     2: { 
         title: 'ГНКТ', 
         color: 'red', 
-        icon: '', 
+        icon: '🔧', 
         items: [
             'Ремонт и обслуживание оборудования для ГНКТ',
             'Ремонт катушек и инжекторов',
@@ -83,7 +119,7 @@ const sectionsData = {
     3: { 
         title: 'РЕМОНТ КОТЕЛЬНЫХ АГРЕГАТОВ', 
         color: 'teal', 
-        icon: '', 
+        icon: '🔥', 
         items: [
             'Замена дефектных экранных и кипятильных труб (вальцовка, сварка)',
             'Ремонт или полная замена обмуровки, теплоизоляции и обшивки котла',
@@ -93,7 +129,7 @@ const sectionsData = {
     4: { 
         title: 'ПРОМЫШЛЕННЫЙ РЕМОНТ И МЕХАНОБРАБОТКА', 
         color: 'slate', 
-        icon: '', 
+        icon: '⚙️', 
         items: [
             'Ремонт центробежных, винтовых и шламовых насосов',
             'Изготовление и восстановление шнеков',
@@ -105,7 +141,7 @@ const sectionsData = {
     5: { 
         title: 'РЕИНЖИНИРИНГ', 
         color: 'dark', 
-        icon: '', 
+        icon: '📐', 
         items: [
             '3D-сканирование и обмер',
             'Проектирование и КД',
@@ -115,18 +151,18 @@ const sectionsData = {
         ] 
     }
 };
+
 function showSectionInfo(index) {
     const data = sectionsData[index];
     if (!data) return;
     
     placeholderText.style.display = 'none';
     infoContent.classList.remove('active');
-    
     infoHeader.className = 'info-header ' + data.color;
     infoIcon.textContent = data.icon;
     infoTitle.textContent = data.title;
-    
     infoList.innerHTML = '';
+    
     data.items.forEach(item => {
         const li = document.createElement('li');
         li.textContent = item;
@@ -145,55 +181,34 @@ function handleSegmentEnter(segment) {
     wheelWrapper.classList.add('shrunk');
     infoPanel.classList.add('visible');
     showSectionInfo(index);
-
+    
     segments.forEach(seg => {
         seg.classList.remove('active');
         seg.classList.remove('dimmed');
     });
-
-    segments.forEach((seg,idx) => {
-        if (idx === index){
+    
+    segments.forEach((seg, idx) => {
+        if (idx === index) {
             seg.classList.add('active');
-        }else if (seg.dataset.color === color){
-        }else {
+        } else if (seg.dataset.color !== color) {
             seg.classList.add('dimmed');
         }
-    })
+    });
 }
 
-function handleSegmentLeave(segment) {
+function handleSegmentLeave() {
     // Текст не пропадает при уходе мыши
 }
 
 segments.forEach(segment => {
     segment.addEventListener('mouseenter', () => handleSegmentEnter(segment));
-    segment.addEventListener('mouseleave', () => handleSegmentLeave(segment));
+    segment.addEventListener('mouseleave', handleSegmentLeave);
     segment.addEventListener('click', () => handleSegmentEnter(segment));
 });
 
-const navLinks = document.querySelectorAll('.site-nav a[href^="#"]');
-const sections = document.querySelectorAll('section[id]');
-
-const scrollSpyObserver = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-        if (entry.isIntersecting) {
-            const id = entry.target.getAttribute('id');
-
-            navLinks.forEach(link => link.classList.remove('active'));
-
-            const activeLink = document.querySelector(`.site-nav a[href="#${id}"]`);
-            if (activeLink) {
-                activeLink.classList.add('active');
-            }
-        }
-    });
-}, {
-    threshold: 0.3,
-    rootMargin: '-100px 0px -50% 0px'
-});
-
-sections.forEach(section => scrollSpyObserver.observe(section));
-
+// ==========================================
+// ЛОГИКА СЛАЙДЕРА ПРОИЗВОДСТВЕННОЙ БАЗЫ
+// ==========================================
 const slides = document.querySelectorAll('.slide');
 const indicators = document.querySelectorAll('.indicator-dot');
 let currentSlide = 0;
@@ -201,43 +216,43 @@ let slideTimeout = null;
 let isPaused = false;
 const SLIDE_DURATION = 5000;
 
-function goToSlide (index){
+function goToSlide(index) {
     if (index === currentSlide) return;
-
+    
     slides.forEach(slide => slide.classList.remove('active'));
     indicators.forEach(dot => dot.classList.remove('active'));
-
+    
     slides[index].classList.add('active');
     indicators[index].classList.add('active');
     currentSlide = index;
 }
 
-function nextSlide(){
+function nextSlide() {
     const next = (currentSlide + 1) % slides.length;
     goToSlide(next);
     scheduleNextSlide();
 }
 
-function scheduleNextSlide(){
-    if (slideTimeout){
+function scheduleNextSlide() {
+    if (slideTimeout) {
         clearTimeout(slideTimeout);
         slideTimeout = null;
     }
-
-    if (!isPaused && slides.length > 1){
+    
+    if (!isPaused && slides.length > 1) {
         slideTimeout = setTimeout(nextSlide, SLIDE_DURATION);
     }
 }
 
-function pauseSlider(){
+function pauseSlider() {
     isPaused = true;
-    if (slideTimeout){
+    if (slideTimeout) {
         clearTimeout(slideTimeout);
         slideTimeout = null;
     }
 }
 
-function resumeSlider(){
+function resumeSlider() {
     isPaused = false;
     scheduleNextSlide();
 }
@@ -248,10 +263,10 @@ indicators.forEach((dot, index) => {
             clearTimeout(slideTimeout);
             slideTimeout = null;
         }
-
+        
         goToSlide(index);
-
-        if (!isPaused){
+        
+        if (!isPaused) {
             slideTimeout = setTimeout(nextSlide, SLIDE_DURATION);
         }
     });
@@ -259,8 +274,30 @@ indicators.forEach((dot, index) => {
 
 const productionSlider = document.querySelector('.production-slider');
 if (productionSlider && slides.length > 1) {
+    let touchStartX = 0;
+    let touchEndX = 0;
+    
+    productionSlider.addEventListener('touchstart', (e) => {
+        touchStartX = e.changedTouches[0].screenX;
+        pauseSlider();
+    }, { passive: true });
+    
+    productionSlider.addEventListener('touchend', (e) => {
+        touchEndX = e.changedTouches[0].screenX;
+        const swipeThreshold = 50;
+        const diff = touchStartX - touchEndX;
+        
+        if (Math.abs(diff) > swipeThreshold) {
+            if (diff > 0) {
+                goToSlide((currentSlide + 1) % slides.length);
+            } else {
+                goToSlide((currentSlide - 1 + slides.length) % slides.length);
+            }
+        }
+        resumeSlider();
+    }, { passive: true });
+    
     productionSlider.addEventListener('mouseenter', pauseSlider);
     productionSlider.addEventListener('mouseleave', resumeSlider);
-
     scheduleNextSlide();
 }
